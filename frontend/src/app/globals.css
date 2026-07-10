@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------
+   Thème Scolaris — clair / sombre
+   Les variables --viz-* proviennent de la palette data-viz validée
+   (contraste + daltonisme) ; ne pas modifier sans revalider.
+------------------------------------------------------------------- */
+
+:root {
+  --surface-0: #f7f7f5;
+  --surface-1: #ffffff;
+  --surface-2: #f1f1ef;
+  --border: #e5e5e2;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #8a8985;
+
+  --viz-series-1: #2a78d6; /* bleu */
+  --viz-series-2: #1baf7a; /* aqua */
+  --viz-series-3: #eda100; /* jaune */
+  --viz-series-4: #008300; /* vert */
+  --viz-series-5: #4a3aa7; /* violet */
+  --viz-series-6: #e34948; /* rouge */
+  --viz-grid: #ececea;
+  --viz-good: #008300;
+  --viz-serious: #e34948;
+}
+
+.dark {
+  --surface-0: #111110;
+  --surface-1: #1a1a19;
+  --surface-2: #232322;
+  --border: #32322f;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #8a8985;
+
+  --viz-series-1: #3987e5;
+  --viz-series-2: #199e70;
+  --viz-series-3: #c98500;
+  --viz-series-4: #008300;
+  --viz-series-5: #9085e9;
+  --viz-series-6: #e66767;
+  --viz-grid: #2c2c2a;
+  --viz-good: #199e70;
+  --viz-serious: #e66767;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font-feature-settings: 'cv02', 'cv03', 'cv04';
+}
+
+/* Scrollbars discrets */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border shadow-card;
+    background: var(--surface-1);
+    border-color: var(--border);
+  }
+  .input {
+    @apply w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500;
+    background: var(--surface-1);
+    border-color: var(--border);
+    color: var(--text-primary);
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50;
+    background: var(--surface-1);
+    border-color: var(--border);
+    color: var(--text-primary);
+  }
+  .btn-secondary:hover {
+    background: var(--surface-2);
+  }
+}
