@@ -55,10 +55,15 @@ export const createApp = () => {
 
   app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
+  // Le routeur `v1` regroupe tout : il est monté sous /api/v1 (standard)
+  // et sous /api/backend (alias utilisé par le déploiement mono-projet
+  // Vercel, où le frontend et l'API partagent le même domaine).
+  const v1 = express.Router();
+
   // ------------------------------------------------------------------
   // Routes publiques (sans authentification)
   // ------------------------------------------------------------------
-  app.use('/api/v1/auth', authRoutes);
+  v1.use('/auth', authRoutes);
 
   // Formulaire de pré-inscription en ligne, accessible aux familles
   // via le code public de l'établissement.
@@ -74,7 +79,7 @@ export const createApp = () => {
     guardianEmail: z.string().email().optional(),
     notes: z.string().optional(),
   });
-  app.post('/api/v1/public/:schoolCode/preregistrations', async (req, res, next) => {
+  v1.post('/public/:schoolCode/preregistrations', async (req, res, next) => {
     try {
       const school = await prisma.school.findUnique({
         where: { code: req.params.schoolCode.toUpperCase() },
@@ -93,7 +98,7 @@ export const createApp = () => {
   });
 
   // Informations publiques d'un établissement (page de pré-inscription).
-  app.get('/api/v1/public/:schoolCode', async (req, res, next) => {
+  v1.get('/public/:schoolCode', async (req, res, next) => {
     try {
       const school = await prisma.school.findUnique({
         where: { code: req.params.schoolCode.toUpperCase() },
@@ -135,7 +140,9 @@ export const createApp = () => {
   api.use('/platform', platformRoutes);
   api.use('/audit', auditRoutes);
 
-  app.use('/api/v1', api);
+  v1.use(api);
+  app.use('/api/v1', v1);
+  app.use('/api/backend', v1);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
