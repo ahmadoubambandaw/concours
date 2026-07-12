@@ -26,5 +26,22 @@ export const env = {
   storage: {
     dir: process.env.STORAGE_DIR ?? 'storage',
   },
+  // URL publique du frontend (redirections de retour PayDunya).
+  publicWebUrl: process.env.PUBLIC_WEB_URL ?? 'http://localhost:3000',
+  // URL publique de l'API (callback IPN PayDunya). Sur le déploiement
+  // mono-domaine Vercel, l'API est servie sous /api/backend.
+  publicApiUrl: process.env.PUBLIC_API_URL ?? 'http://localhost:4000',
+  paydunya: {
+    // Clés du compte PayDunya (https://app.paydunya.com → Intégrations → API).
+    masterKey: process.env.PAYDUNYA_MASTER_KEY ?? '',
+    privateKey: process.env.PAYDUNYA_PRIVATE_KEY ?? '',
+    publicKey: process.env.PAYDUNYA_PUBLIC_KEY ?? '',
+    token: process.env.PAYDUNYA_TOKEN ?? '',
+    // 'test' (sandbox) ou 'live' (production).
+    mode: process.env.PAYDUNYA_MODE ?? 'test',
+    get configured() {
+      return Boolean(this.masterKey && this.privateKey && this.token);
+    },
+  },
   isProd: (process.env.NODE_ENV ?? 'development') === 'production',
 };

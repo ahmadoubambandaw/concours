@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
 import { api, apiDownload, authStore } from '@/lib/api';
 import { Badge, Card, CardHeader, DataTable, EmptyState, PageHeader, Spinner, StatusBadge } from '@/components/ui';
+import { PayOnlineButton } from '@/components/PayOnlineButton';
 import { DAYS_FR, formatDate, formatMoney } from '@/lib/format';
 
 const ChildView = ({ child, currency }: { child: any; currency: string }) => (
@@ -41,17 +42,25 @@ const ChildView = ({ child, currency }: { child: any; currency: string }) => (
         <CardHeader title="Paiements" />
         <div className="p-2">
           {child.invoices.length === 0 && <EmptyState title="Aucune facture" />}
-          {child.invoices.map((inv: any) => (
-            <div key={inv.id} className="flex items-center justify-between rounded-lg px-3 py-2">
-              <div>
-                <p className="text-sm font-medium">{inv.number}</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  {formatMoney(inv.paid, currency)} / {formatMoney(inv.total, currency)}
-                </p>
+          {child.invoices.map((inv: any) => {
+            const due = inv.total - inv.paid;
+            return (
+              <div key={inv.id} className="flex items-center justify-between gap-2 rounded-lg px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{inv.number}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {formatMoney(inv.paid, currency)} / {formatMoney(inv.total, currency)}
+                    {due > 0 && <span className="text-red-500"> · reste {formatMoney(due, currency)}</span>}
+                  </p>
+                </div>
+                {due > 0 && inv.status !== 'CANCELLED' ? (
+                  <PayOnlineButton invoiceId={inv.id} small />
+                ) : (
+                  <StatusBadge status={inv.status} />
+                )}
               </div>
-              <StatusBadge status={inv.status} />
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
 

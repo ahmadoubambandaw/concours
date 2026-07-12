@@ -22,6 +22,7 @@ import studentsRoutes from './modules/people/students.routes';
 import guardiansRoutes from './modules/people/guardians.routes';
 import enrollmentRoutes from './modules/enrollment/enrollment.routes';
 import financeRoutes from './modules/finance/finance.routes';
+import financeOnlineRoutes from './modules/finance/online.routes';
 import attendanceRoutes from './modules/attendance/attendance.routes';
 import gradesRoutes from './modules/grades/grades.routes';
 import timetableRoutes from './modules/timetable/timetable.routes';
@@ -45,6 +46,8 @@ export const createApp = () => {
   app.use(cors({ origin: env.cors.origins, credentials: true }));
   app.use(compression());
   app.use(express.json({ limit: '5mb' }));
+  // Les callbacks IPN PayDunya arrivent en application/x-www-form-urlencoded.
+  app.use(express.urlencoded({ extended: true }));
   if (!env.isProd) app.use(morgan('dev'));
 
   // Limite globale (les routes d'auth ont leur propre limite plus stricte).
@@ -96,6 +99,10 @@ export const createApp = () => {
       next(err);
     }
   });
+
+  // Paiements en ligne PayDunya : le webhook IPN doit rester public ;
+  // les routes checkout/status appliquent `authenticate` en interne.
+  v1.use('/finance/online', financeOnlineRoutes);
 
   // Informations publiques d'un établissement (page de pré-inscription).
   v1.get('/public/:schoolCode', async (req, res, next) => {

@@ -340,6 +340,9 @@ router.get(
   },
 );
 
+// Note : les paiements en ligne (PayDunya — Orange Money, Wave, Free Money,
+// carte) sont gérés par `online.routes.ts`, monté sous /finance/online.
+
 // --- Dépenses & recettes (comptabilité de caisse) ---
 
 const expenseSchema = z.object({
