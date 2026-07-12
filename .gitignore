@@ -10,6 +10,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.next
+out
+build
+coverage
 *.local
 
 # Editor directories and files
@@ -22,4 +26,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Env
 .env
+.env.local
+.env.*.local
+
+# Uploads & generated files
+backend/uploads/
+backend/storage/
+backend/prisma/*.db
