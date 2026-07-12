@@ -6,6 +6,8 @@
   ],
   "routes": [
     { "src": "/api/backend/(.*)", "dest": "backend/api/index.ts" },
-    { "src": "/health", "dest": "backend/api/index.ts" }
+    { "src": "/health", "dest": "backend/api/index.ts" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "frontend/$1" }
   ]
 }
