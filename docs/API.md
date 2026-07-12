@@ -53,6 +53,18 @@ CRUD : `/academic-years` (+ `POST :id/close|archive|reopen`), `/terms`, `/levels
 - `/fees` CRUD (grille des frais par catégorie/niveau/fréquence)
 - `/invoices` GET/POST + `POST :id/cancel` + `GET /invoices/overdue/list` (relances)
 - `/payments` GET/POST (méthodes : CASH, ORANGE_MONEY, WAVE, FREE_MONEY, CARD, BANK_TRANSFER, STRIPE, CHEQUE) + `GET :id/receipt` (**PDF**)
+
+### Paiements en ligne — PayDunya (`/finance/online`)
+
+Agrégateur ouest-africain : Orange Money, Wave, Free Money, carte bancaire.
+
+| Méthode | Route | Auth | Description |
+|---|---|---|---|
+| POST | `/finance/online/checkout` | oui | Crée un paiement PayDunya pour une facture (`{invoiceId}`) et renvoie `{checkoutUrl, token, amount}`. Un parent/élève ne peut régler que ses propres factures. |
+| POST | `/finance/online/webhook` | **public** | Callback IPN PayDunya : confirme le statut réel puis enregistre le paiement (idempotent via le token) et met la facture à jour. |
+| GET | `/finance/online/status/:token` | oui | Statut d'un paiement (utilisé par la page de retour `/paiement/retour`). |
+
+Configuration via variables d'environnement : `PAYDUNYA_MASTER_KEY`, `PAYDUNYA_PRIVATE_KEY`, `PAYDUNYA_TOKEN`, `PAYDUNYA_MODE` (`test`/`live`), `PUBLIC_WEB_URL`, `PUBLIC_API_URL`. Sans clés, `/checkout` renvoie 400 (fonctionnalité désactivée proprement).
 - `/expenses`, `/incomes` CRUD · `GET /cashbook` (journal de caisse)
 
 ## Présences — `/attendance`

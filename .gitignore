@@ -36,3 +36,4 @@ coverage
 backend/uploads/
 backend/storage/
 backend/prisma/*.db
+*.tsbuildinfo

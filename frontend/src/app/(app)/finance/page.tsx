@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Download, Plus } from 'lucide-react';
 import { api, apiDownload, authStore } from '@/lib/api';
 import { Card, CardHeader, DataTable, Field, Modal, PageHeader, Spinner, StatusBadge } from '@/components/ui';
+import { PayOnlineButton } from '@/components/PayOnlineButton';
 import { formatDate, formatMoney, PAYMENT_METHOD_LABELS } from '@/lib/format';
 
 export default function FinancePage() {
@@ -122,6 +123,15 @@ export default function FinancePage() {
               { key: 'due', header: 'Reste', render: (i: any) => <span className="font-medium tabular-nums">{formatMoney(i.total - i.paid, currency)}</span> },
               { key: 'dueDate', header: 'Échéance', render: (i: any) => formatDate(i.dueDate) },
               { key: 'status', header: 'Statut', render: (i: any) => <StatusBadge status={i.status} /> },
+              {
+                key: 'online', header: 'En ligne',
+                render: (i: any) =>
+                  i.total - i.paid > 0 && i.status !== 'CANCELLED' ? (
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <PayOnlineButton invoiceId={i.id} small />
+                    </div>
+                  ) : null,
+              },
             ]}
             rows={invoices.items}
             emptyLabel="Aucune facture"
