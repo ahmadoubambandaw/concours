@@ -1,13 +1,19 @@
-// Service de notifications multi-canal (Email, SMS, WhatsApp, Push).
+// Service de notifications multi-canal (Email, SMS, WhatsApp, Push, in-app).
 //
-// Architecture par adaptateurs : chaque canal implémente `ChannelProvider`.
-// En développement (ou sans clés API), l'adaptateur "console" journalise
-// simplement l'envoi. En production, brancher ici les fournisseurs réels
-// (SMTP/SendGrid, Twilio, API WhatsApp Business, FCM) via les variables
-// d'environnement correspondantes.
+// Chaque canal a un adaptateur activé par variables d'environnement :
+//   EMAIL    → SMTP (nodemailer) : SendGrid, Gmail, Mailgun, Resend, OVH…
+//   SMS      → Twilio
+//   WHATSAPP → WhatsApp Business Cloud API (Meta) ou Twilio WhatsApp
+//   PUSH     → (à venir : Firebase Cloud Messaging)
+//
+// Si un canal n'est pas configuré, on retombe proprement sur un envoi
+// « console » (journalisé) sans faire échouer la requête — l'app reste
+// fonctionnelle, les envois deviennent réels dès que les clés sont posées.
 
+import nodemailer from 'nodemailer';
 import type { MessageChannel } from '@prisma/client';
 import { prisma } from '../config/db';
+import { env } from '../config/env';
 
 export interface OutboundMessage {
   to: string; // email, numéro de téléphone ou token push
@@ -15,43 +21,148 @@ export interface OutboundMessage {
   body: string;
 }
 
-export interface ChannelProvider {
-  send(message: OutboundMessage): Promise<{ ok: boolean; providerId?: string }>;
+export interface SendResult {
+  ok: boolean;
+  simulated?: boolean;
+  providerId?: string;
+  error?: string;
 }
 
-class ConsoleProvider implements ChannelProvider {
-  constructor(private channel: string) {}
-  async send(message: OutboundMessage) {
-    console.log(`[notify:${this.channel}] → ${message.to} : ${message.subject ?? ''} ${message.body.slice(0, 120)}`);
-    return { ok: true };
-  }
-}
-
-// Points d'extension production — remplacer par les vrais SDK :
-//   EMAIL    : nodemailer/SendGrid  (SMTP_URL / SENDGRID_API_KEY)
-//   SMS      : Twilio / Orange SMS API (TWILIO_SID…)
-//   WHATSAPP : WhatsApp Business Cloud API (WA_TOKEN, WA_PHONE_ID)
-//   PUSH     : Firebase Cloud Messaging (FCM_SERVER_KEY)
-const providers: Record<Exclude<MessageChannel, 'INTERNAL'>, ChannelProvider> = {
-  EMAIL: new ConsoleProvider('email'),
-  SMS: new ConsoleProvider('sms'),
-  WHATSAPP: new ConsoleProvider('whatsapp'),
-  PUSH: new ConsoleProvider('push'),
+/** Normalise un numéro sénégalais/international au format E.164 (+221…). */
+export const toE164 = (raw: string, defaultCountry = '221'): string => {
+  let s = raw.replace(/[^\d+]/g, '');
+  if (s.startsWith('+')) return s;
+  if (s.startsWith('00')) return '+' + s.slice(2);
+  // Numéro local (ex. 77xxxxxxx) → préfixe pays par défaut.
+  if (s.length <= 9) return `+${defaultCountry}${s}`;
+  return '+' + s;
 };
+
+// ------------------------------------------------------------------
+// Adaptateurs
+// ------------------------------------------------------------------
+
+let mailer: nodemailer.Transporter | null = null;
+const getMailer = () => {
+  if (!mailer) {
+    mailer = nodemailer.createTransport({
+      host: env.email.host,
+      port: env.email.port,
+      secure: env.email.secure,
+      auth: { user: env.email.user, pass: env.email.pass },
+    });
+  }
+  return mailer;
+};
+
+const sendEmail = async (msg: OutboundMessage): Promise<SendResult> => {
+  if (!env.email.configured) return simulate('email', msg);
+  const info = await getMailer().sendMail({
+    from: env.email.from,
+    to: msg.to,
+    subject: msg.subject ?? 'Message de votre établissement',
+    text: msg.body,
+  });
+  return { ok: true, providerId: info.messageId };
+};
+
+const twilioAuthHeader = () =>
+  'Basic ' + Buffer.from(`${env.sms.twilioSid}:${env.sms.twilioToken}`).toString('base64');
+
+const sendTwilio = async (from: string, to: string, body: string): Promise<SendResult> => {
+  const res = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${env.sms.twilioSid}/Messages.json`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: twilioAuthHeader(),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({ From: from, To: to, Body: body }),
+    },
+  );
+  const data: any = await res.json().catch(() => ({}));
+  if (!res.ok) return { ok: false, error: data.message ?? `HTTP ${res.status}` };
+  return { ok: true, providerId: data.sid };
+};
+
+const sendSms = async (msg: OutboundMessage): Promise<SendResult> => {
+  if (!env.sms.configured) return simulate('sms', msg);
+  return sendTwilio(env.sms.twilioFrom, toE164(msg.to), msg.body);
+};
+
+const sendWhatsapp = async (msg: OutboundMessage): Promise<SendResult> => {
+  const provider = env.whatsapp.provider;
+  if (!provider) return simulate('whatsapp', msg);
+  const to = toE164(msg.to);
+
+  if (provider === 'meta') {
+    const res = await fetch(
+      `https://graph.facebook.com/v21.0/${env.whatsapp.metaPhoneId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.whatsapp.metaToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: to.replace('+', ''),
+          type: 'text',
+          text: { body: msg.body },
+        }),
+      },
+    );
+    const data: any = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: data.error?.message ?? `HTTP ${res.status}` };
+    return { ok: true, providerId: data.messages?.[0]?.id };
+  }
+
+  // Twilio WhatsApp : les numéros sont préfixés par "whatsapp:".
+  return sendTwilio(env.whatsapp.twilioFrom, `whatsapp:${to}`, msg.body);
+};
+
+const simulate = (channel: string, msg: OutboundMessage): SendResult => {
+  console.log(`[notify:${channel}:SIMULÉ] → ${msg.to} : ${msg.subject ?? ''} ${msg.body.slice(0, 120)}`);
+  return { ok: true, simulated: true };
+};
+
+// ------------------------------------------------------------------
+// API publique
+// ------------------------------------------------------------------
 
 export const sendViaChannel = async (
   channel: MessageChannel,
   message: OutboundMessage,
-): Promise<boolean> => {
-  if (channel === 'INTERNAL') return true; // stocké en base uniquement
+): Promise<SendResult> => {
+  if (channel === 'INTERNAL') return { ok: true }; // stocké en base uniquement
   try {
-    const result = await providers[channel].send(message);
-    return result.ok;
+    switch (channel) {
+      case 'EMAIL':
+        return await sendEmail(message);
+      case 'SMS':
+        return await sendSms(message);
+      case 'WHATSAPP':
+        return await sendWhatsapp(message);
+      case 'PUSH':
+        return simulate('push', message); // FCM à venir
+      default:
+        return { ok: false, error: 'Canal inconnu' };
+    }
   } catch (err) {
     console.error(`[notify:${channel}] échec`, err);
-    return false;
+    return { ok: false, error: (err as Error).message };
   }
 };
+
+/** État de configuration de chaque canal (pour l'UI). */
+export const channelStatus = () => ({
+  INTERNAL: { configured: true, provider: 'in-app' },
+  EMAIL: { configured: env.email.configured, provider: env.email.configured ? 'SMTP' : null },
+  SMS: { configured: env.sms.configured, provider: env.sms.configured ? 'Twilio' : null },
+  WHATSAPP: { configured: env.whatsapp.configured, provider: env.whatsapp.provider },
+  PUSH: { configured: false, provider: null },
+});
 
 /** Notification in-app pour un utilisateur. */
 export const notifyUser = async (

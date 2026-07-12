@@ -22,23 +22,32 @@ export default function CommunicationPage() {
   const [notifications, setNotifications] = useState<any>(null);
   const [modal, setModal] = useState<'message' | 'announcement' | null>(null);
   const [form, setForm] = useState<any>({ channel: 'INTERNAL', audience: 'ALL' });
+  const [channels, setChannels] = useState<any>(null);
   const [result, setResult] = useState('');
+  const [warning, setWarning] = useState('');
   const [error, setError] = useState('');
 
   const load = useCallback(() => {
     api('/comms/messages?pageSize=25').then(setMessages).catch(() => undefined);
     api('/comms/announcements?pageSize=20').then(setAnnouncements).catch(() => undefined);
     api('/comms/notifications').then(setNotifications).catch(() => undefined);
+    api('/comms/channels').then(setChannels).catch(() => undefined);
   }, []);
   useEffect(load, [load]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); setResult('');
+    setError(''); setResult(''); setWarning('');
     try {
       if (modal === 'message') {
         const res = await api('/comms/messages', { method: 'POST', body: JSON.stringify(form) });
-        setResult(`Message envoyé à ${res.recipients} destinataire(s) via ${CHANNELS[form.channel]}.`);
+        if (res.recipients === 0) {
+          setWarning(`Aucun destinataire trouvé pour « ${AUDIENCES[form.audience] ?? form.audience} » sur ce canal (numéros/emails manquants ?).`);
+        } else if (res.simulated > 0) {
+          setWarning(`Message enregistré mais SIMULÉ : le canal ${CHANNELS[form.channel]} n'est pas encore configuré (clés manquantes). ${res.recipients} destinataire(s) auraient été touchés.`);
+        } else {
+          setResult(`Message envoyé à ${res.recipients} destinataire(s) via ${CHANNELS[form.channel]}.`);
+        }
       } else {
         await api('/comms/announcements', { method: 'POST', body: JSON.stringify(form) });
         setResult('Annonce publiée.');
@@ -68,6 +77,21 @@ export default function CommunicationPage() {
       />
 
       {result && <p className="mb-3 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">{result}</p>}
+      {warning && <p className="mb-3 rounded-lg bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">{warning}</p>}
+
+      {/* État des canaux d'envoi */}
+      {channels && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Canaux :</span>
+          {[
+            ['INTERNAL', 'Interne'], ['EMAIL', 'Email'], ['SMS', 'SMS'], ['WHATSAPP', 'WhatsApp'],
+          ].map(([key, label]) => (
+            <Badge key={key} color={channels[key]?.configured ? 'green' : 'gray'}>
+              {label} {channels[key]?.configured ? '· actif' : '· non configuré'}
+            </Badge>
+          ))}
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">

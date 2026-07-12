@@ -43,5 +43,44 @@ export const env = {
       return Boolean(this.masterKey && this.privateKey && this.token);
     },
   },
+  // --- Fournisseurs de notifications ---
+  email: {
+    // SMTP universel (SendGrid, Gmail, Mailgun, Resend, OVH…).
+    host: process.env.SMTP_HOST ?? '',
+    port: parseInt(process.env.SMTP_PORT ?? '587', 10),
+    user: process.env.SMTP_USER ?? '',
+    pass: process.env.SMTP_PASS ?? '',
+    from: process.env.SMTP_FROM ?? process.env.SMTP_USER ?? '',
+    secure: process.env.SMTP_SECURE === 'true',
+    get configured() {
+      return Boolean(this.host && this.user && this.pass);
+    },
+  },
+  sms: {
+    // Twilio (compatible SMS).
+    twilioSid: process.env.TWILIO_ACCOUNT_SID ?? '',
+    twilioToken: process.env.TWILIO_AUTH_TOKEN ?? '',
+    twilioFrom: process.env.TWILIO_SMS_FROM ?? '',
+    get configured() {
+      return Boolean(this.twilioSid && this.twilioToken && this.twilioFrom);
+    },
+  },
+  whatsapp: {
+    // Option 1 : WhatsApp Business Cloud API (Meta) — officiel, économique.
+    metaToken: process.env.WHATSAPP_TOKEN ?? '',
+    metaPhoneId: process.env.WHATSAPP_PHONE_ID ?? '',
+    // Option 2 : Twilio WhatsApp (réutilise le compte Twilio).
+    twilioSid: process.env.TWILIO_ACCOUNT_SID ?? '',
+    twilioToken: process.env.TWILIO_AUTH_TOKEN ?? '',
+    twilioFrom: process.env.TWILIO_WHATSAPP_FROM ?? '', // ex: whatsapp:+14155238886
+    get provider(): 'meta' | 'twilio' | null {
+      if (this.metaToken && this.metaPhoneId) return 'meta';
+      if (this.twilioSid && this.twilioToken && this.twilioFrom) return 'twilio';
+      return null;
+    },
+    get configured() {
+      return this.provider !== null;
+    },
+  },
   isProd: (process.env.NODE_ENV ?? 'development') === 'production',
 };

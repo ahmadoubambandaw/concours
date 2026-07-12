@@ -80,6 +80,40 @@ router.post(
   },
 );
 
+/** Définit les matières enseignées par l'enseignant (remplace la liste). */
+router.put(
+  '/:id/subjects',
+  requireTenant,
+  requirePermission('teachers', 'update'),
+  async (req, res, next) => {
+    try {
+      const { subjectIds } = z
+        .object({ subjectIds: z.array(z.string().uuid()) })
+        .parse(req.body);
+      const teacher = await prisma.teacher.findFirst({
+        where: { id: req.params.id, schoolId: req.schoolId },
+        select: { id: true },
+      });
+      if (!teacher) throw ApiError.notFound();
+      // Sécurité multi-tenant : ne relier que des matières de l'école.
+      const valid = await prisma.subject.findMany({
+        where: { id: { in: subjectIds }, schoolId: req.schoolId },
+        select: { id: true },
+      });
+      await prisma.$transaction([
+        prisma.teacherSubject.deleteMany({ where: { teacherId: teacher.id } }),
+        prisma.teacherSubject.createMany({
+          data: valid.map((s) => ({ teacherId: teacher.id, subjectId: s.id })),
+          skipDuplicates: true,
+        }),
+      ]);
+      res.json({ ok: true, linked: valid.length });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
 /** Emploi du temps de l'enseignant. */
 router.get(
   '/:id/timetable',

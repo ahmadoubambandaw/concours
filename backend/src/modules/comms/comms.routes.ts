@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { prisma } from '../../config/db';
 import { ApiError } from '../../utils/errors';
 import { crudRouter } from '../../utils/crud';
-import { sendViaChannel } from '../../services/notify';
+import { channelStatus, sendViaChannel } from '../../services/notify';
 import { requirePermission, requireTenant } from '../../middleware/auth.middleware';
 import { getPagination, paginated } from '../../utils/pagination';
 
@@ -71,13 +71,20 @@ router.post(
       const recipients = await resolveRecipients(req.schoolId!, data.audience, data.channel);
 
       let sent = 0;
+      let simulated = 0;
+      let lastError: string | undefined;
       for (const to of recipients) {
-        const ok = await sendViaChannel(data.channel, {
+        const result = await sendViaChannel(data.channel, {
           to,
           subject: data.subject,
           body: data.body,
         });
-        if (ok) sent += 1;
+        if (result.ok) {
+          sent += 1;
+          if (result.simulated) simulated += 1;
+        } else {
+          lastError = result.error;
+        }
       }
 
       const message = await prisma.message.create({
@@ -91,12 +98,25 @@ router.post(
           status: sent > 0 || recipients.length === 0 ? 'SENT' : 'FAILED',
         },
       });
-      res.status(201).json({ message, recipients: recipients.length, sent });
+      res.status(201).json({
+        message,
+        recipients: recipients.length,
+        sent,
+        // Indique si l'envoi a été simulé (canal non configuré) — l'UI
+        // peut alerter l'utilisateur pour qu'il renseigne les clés.
+        simulated,
+        error: sent === 0 ? lastError : undefined,
+      });
     } catch (err) {
       next(err);
     }
   },
 );
+
+/** Canaux d'envoi configurés (Email/SMS/WhatsApp) — pour l'UI. */
+router.get('/channels', requireTenant, requirePermission('communication', 'read'), (_req, res) => {
+  res.json(channelStatus());
+});
 
 router.get(
   '/messages',
