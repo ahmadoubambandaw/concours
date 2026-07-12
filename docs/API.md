@@ -104,8 +104,10 @@ GET (par classe/enseignant) · POST/PATCH (**409 + détail des conflits** enseig
 
 ## Communication — `/comms`
 
-`POST /messages` (canaux INTERNAL/EMAIL/SMS/WHATSAPP/PUSH ; audiences ALL/PARENTS/TEACHERS/STAFF/CLASS:id/USER:id) ·
-`GET /messages` · `/announcements` CRUD · `GET /notifications` · `POST /notifications/read-all` · `/documents` CRUD
+`POST /messages` (canaux INTERNAL/EMAIL/SMS/WHATSAPP/PUSH ; audiences ALL/PARENTS/TEACHERS/STAFF/CLASS:id/USER:id) — renvoie `{recipients, sent, simulated}` ; `simulated>0` = canal non configuré (envoi journalisé) ·
+`GET /messages` · `GET /channels` (état de configuration des canaux) · `/announcements` CRUD · `GET /notifications` · `POST /notifications/read-all` · `/documents` CRUD
+
+**Envois réels** : Email via SMTP (`SMTP_HOST/USER/PASS/FROM`), SMS via Twilio (`TWILIO_ACCOUNT_SID/AUTH_TOKEN/SMS_FROM`), WhatsApp via Meta Cloud API (`WHATSAPP_TOKEN/PHONE_ID`) ou Twilio (`TWILIO_WHATSAPP_FROM`). Sans clés, les envois sont simulés — l'app reste fonctionnelle.
 
 ## Tableaux de bord — `/dashboard`
 
