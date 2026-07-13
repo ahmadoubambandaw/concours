@@ -8,6 +8,7 @@ import { Plus, ShieldCheck } from 'lucide-react';
 import { api, authStore } from '@/lib/api';
 import { Badge, Card, CardHeader, DataTable, Field, Modal, PageHeader, Spinner, StatusBadge } from '@/components/ui';
 import { UserEditor } from '@/components/UserEditor';
+import { RolePermissionsPreview } from '@/components/RolePermissionsPreview';
 import { formatDate, formatMoney, ROLE_LABELS } from '@/lib/format';
 
 export default function SettingsPage() {
@@ -278,12 +279,14 @@ export default function SettingsPage() {
           <Field label="Email" required><input type="email" required className="input" value={form.email ?? ''} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Mot de passe" required><input type="password" required minLength={8} className="input" value={form.password ?? ''} onChange={(e) => setForm({ ...form, password: e.target.value })} /></Field>
-            <Field label="Rôle" required>
+            <Field label="Fonction (rôle)" required>
               <select className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                 {Object.entries(ROLE_LABELS).filter(([k]) => k !== 'SUPER_ADMIN').map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </Field>
           </div>
+          {/* La fonction détermine automatiquement les permissions. */}
+          <RolePermissionsPreview role={form.role} />
           {error && <p className="text-sm text-red-500">{error}</p>}
           <button type="submit" className="btn-primary w-full">Créer</button>
         </form>
