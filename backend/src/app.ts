@@ -23,6 +23,8 @@ import guardiansRoutes from './modules/people/guardians.routes';
 import enrollmentRoutes from './modules/enrollment/enrollment.routes';
 import financeRoutes from './modules/finance/finance.routes';
 import financeOnlineRoutes from './modules/finance/online.routes';
+import subscriptionRoutes, { publicSubscriptionRouter } from './modules/subscription/subscription.routes';
+import { requireFeature } from './middleware/plan.middleware';
 import attendanceRoutes from './modules/attendance/attendance.routes';
 import gradesRoutes from './modules/grades/grades.routes';
 import timetableRoutes from './modules/timetable/timetable.routes';
@@ -104,6 +106,9 @@ export const createApp = () => {
   // les routes checkout/status appliquent `authenticate` en interne.
   v1.use('/finance/online', financeOnlineRoutes);
 
+  // Abonnements — grille tarifaire publique + webhook d'activation PayDunya.
+  v1.use('/subscription', publicSubscriptionRouter);
+
   // Informations publiques d'un établissement (page de pré-inscription).
   v1.get('/public/:schoolCode', async (req, res, next) => {
     try {
@@ -131,21 +136,23 @@ export const createApp = () => {
   api.use('/students', studentsRoutes);
   api.use('/guardians', guardiansRoutes);
   api.use('/enrollment', enrollmentRoutes);
-  api.use('/finance', financeRoutes);
+  // Modules soumis à la formule d'abonnement (voir config/plans.ts).
+  api.use('/finance', requireFeature('finance'), financeRoutes);
   api.use('/attendance', attendanceRoutes);
   api.use('/grades', gradesRoutes);
-  api.use('/timetable', timetableRoutes);
+  api.use('/timetable', requireFeature('timetable'), timetableRoutes);
   api.use('/planning', planningRoutes);
-  api.use('/services', servicesRoutes);
+  api.use('/services', requireFeature('services'), servicesRoutes);
   api.use('/welfare', welfareRoutes);
-  api.use('/hr', hrRoutes);
+  api.use('/hr', requireFeature('hr'), hrRoutes);
   api.use('/comms', commsRoutes);
   api.use('/dashboard', dashboardRoutes);
   api.use('/reports', reportsRoutes);
-  api.use('/ai', aiRoutes);
+  api.use('/ai', requireFeature('ai'), aiRoutes);
   api.use('/portal', portalRoutes);
   api.use('/platform', platformRoutes);
   api.use('/audit', auditRoutes);
+  api.use('/subscription', subscriptionRoutes);
 
   v1.use(api);
   app.use('/api/v1', v1);

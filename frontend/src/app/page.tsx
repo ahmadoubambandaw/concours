@@ -1,6 +1,7 @@
 // Landing page publique — présentation du SaaS.
 
 import Link from 'next/link';
+import { PricingGrid } from '@/components/PricingGrid';
 import {
   BarChart3,
   BookOpen,
@@ -40,6 +41,7 @@ export default function LandingPage() {
           </div>
           <nav className="hidden items-center gap-6 text-sm md:flex" style={{ color: 'var(--text-secondary)' }}>
             <a href="#modules" className="hover:text-brand-600">Modules</a>
+            <a href="#tarifs" className="hover:text-brand-600">Tarifs</a>
             <a href="#roles" className="hover:text-brand-600">Pour qui ?</a>
             <a href="#securite" className="hover:text-brand-600">Sécurité</a>
           </nav>
@@ -86,6 +88,20 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Tarifs */}
+      <section id="tarifs" className="mx-auto max-w-6xl px-4 py-16">
+        <h2 className="text-center text-3xl font-bold">Des formules simples et transparentes</h2>
+        <p className="mt-3 text-center" style={{ color: 'var(--text-secondary)' }}>
+          Commencez gratuitement, évoluez quand vous voulez. 30 jours d&apos;essai sur les formules payantes.
+        </p>
+        <div className="mt-12">
+          <PricingGrid />
+        </div>
+        <p className="mt-6 text-center text-xs" style={{ color: 'var(--text-muted)' }}>
+          Paiement par Orange Money, Wave, Free Money ou carte bancaire (PayDunya). Sans engagement.
+        </p>
       </section>
 
       {/* Rôles */}

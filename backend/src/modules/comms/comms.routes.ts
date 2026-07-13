@@ -7,6 +7,8 @@ import { prisma } from '../../config/db';
 import { ApiError } from '../../utils/errors';
 import { crudRouter } from '../../utils/crud';
 import { channelStatus, sendViaChannel } from '../../services/notify';
+import { getEffectivePlan } from '../../middleware/plan.middleware';
+import { hasFeature } from '../../config/plans';
 import { requirePermission, requireTenant } from '../../middleware/auth.middleware';
 import { getPagination, paginated } from '../../utils/pagination';
 
@@ -68,6 +70,18 @@ router.post(
   async (req, res, next) => {
     try {
       const data = messageSchema.parse(req.body);
+      // Les canaux externes (SMS/WhatsApp/Email) requièrent la formule Premium ;
+      // l'interne (in-app) reste disponible sur toutes les formules.
+      if (data.channel !== 'INTERNAL' && req.user?.role !== 'SUPER_ADMIN') {
+        const plan = await getEffectivePlan(req.schoolId!);
+        if (!hasFeature(plan, 'messagingChannels')) {
+          throw new ApiError(
+            402,
+            `L'envoi ${data.channel} nécessite la formule Premium. Utilisez le canal « Interne » ou passez à Premium.`,
+            { upgrade: true, currentPlan: plan },
+          );
+        }
+      }
       const recipients = await resolveRecipients(req.schoolId!, data.audience, data.channel);
 
       let sent = 0;

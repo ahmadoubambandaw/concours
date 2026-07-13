@@ -126,6 +126,20 @@ GET (par classe/enseignant) · POST/PATCH (**409 + détail des conflits** enseig
 
 `GET /schools` · `PATCH /schools/:id` (statut, essai, réseau) · `GET /stats` · `GET|POST /networks`
 
+## Abonnements — `/subscription`
+
+Formules par fonctionnalités : **Découverte** (gratuit, 60 élèves), **Standard** (15 000/mois · 150 000/an, 400 élèves, + finances/communication/EDT/services/RH), **Premium** (35 000/mois · 350 000/an, illimité, + paiements en ligne, SMS/WhatsApp, IA, multi-établissements). Annuel = 2 mois offerts.
+
+| Méthode | Route | Auth | Description |
+|---|---|---|---|
+| GET | `/subscription/plans` | **public** | Grille tarifaire |
+| POST | `/subscription/webhook` | **public** | IPN PayDunya → activation de la formule |
+| GET | `/subscription/current` | oui | Formule effective + usage (élèves/limite) + historique |
+| POST | `/subscription/checkout` | oui (settings:update) | Souscrit un plan (`{plan, cycle}`) via PayDunya |
+| GET | `/subscription/status/:token` | oui | Statut d'activation (page de retour) |
+
+**Application des limites** : la limite d'élèves et l'accès aux modules sont appliqués selon la formule effective. Une formule payante expirée retombe sur Découverte. Les endpoints hors formule renvoient **402** avec `{upgrade:true, currentPlan}`. Modules soumis : finance, timetable, services, hr (Standard+) ; paiements en ligne, SMS/WhatsApp/Email réels, IA, multi-établissements (Premium).
+
 ## Audit — `/audit`
 
 `GET /audit?userId=&resource=` — journal des écritures (utilisateur, action, IP)

@@ -34,6 +34,25 @@ enum SchoolStatus {
   CLOSED
 }
 
+// Formules d'abonnement (par fonctionnalités).
+enum Plan {
+  DECOUVERTE // gratuit
+  STANDARD
+  PREMIUM
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
 model SchoolNetwork {
   id        String   @id @default(uuid())
   name      String
@@ -63,6 +82,13 @@ model School {
   networkId  String?
   network    SchoolNetwork? @relation(fields: [networkId], references: [id])
   trialEndsAt DateTime?
+  // Abonnement : formule courante et date d'expiration.
+  // planExpiresAt null = plan permanent (pas d'expiration) ; sinon, une fois
+  // dépassée, l'établissement retombe sur la formule Découverte (gratuite).
+  // Par défaut Découverte (gratuit) ; l'inscription applique un essai
+  // Premium de 30 jours via planExpiresAt.
+  plan          Plan       @default(DECOUVERTE)
+  planExpiresAt DateTime?
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 
@@ -109,6 +135,26 @@ model School {
   auditLogs        AuditLog[]
   terms            Term[]
   studentTransports StudentTransport[]
+  subscriptions    Subscription[]
+}
+
+// Historique des abonnements (souscriptions et renouvellements).
+model Subscription {
+  id         String             @id @default(uuid())
+  schoolId   String
+  school     School             @relation(fields: [schoolId], references: [id])
+  plan       Plan
+  cycle      BillingCycle
+  amount     Int // montant payé (devise de l'école)
+  months     Int // durée couverte
+  status     SubscriptionStatus @default(PENDING)
+  reference  String? // référence de paiement (token PayDunya)
+  startsAt   DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime           @default(now())
+
+  @@index([schoolId, status])
+  @@index([reference])
 }
 
 // ------------------------------------------------------------

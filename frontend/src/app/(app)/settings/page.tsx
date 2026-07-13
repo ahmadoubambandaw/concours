@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Plus, ShieldCheck } from 'lucide-react';
 import { api, authStore } from '@/lib/api';
 import { Badge, Card, CardHeader, DataTable, Field, Modal, PageHeader, Spinner, StatusBadge } from '@/components/ui';
+import { UserEditor } from '@/components/UserEditor';
 import { formatDate, formatMoney, ROLE_LABELS } from '@/lib/format';
 
 export default function SettingsPage() {
@@ -14,6 +15,7 @@ export default function SettingsPage() {
   const [years, setYears] = useState<any>(null);
   const [fees, setFees] = useState<any>(null);
   const [users, setUsers] = useState<any>(null);
+  const [editUser, setEditUser] = useState<any>(null);
   const [me, setMe] = useState<any>(null);
   const [modal, setModal] = useState<'year' | 'fee' | 'user' | '2fa' | null>(null);
   const [form, setForm] = useState<any>({});
@@ -203,6 +205,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader
             title="Utilisateurs & rôles"
+            subtitle="Cliquez sur un utilisateur pour gérer son rôle et ses permissions"
             action={<button className="btn-secondary !px-2.5 !py-1.5" onClick={() => { setForm({ role: 'SECRETARY' }); setModal('user'); }}><Plus size={14} /></button>}
           />
           {!users ? <Spinner /> : (
@@ -214,11 +217,17 @@ export default function SettingsPage() {
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{u.email}</p>
                   </div>
                 ) },
-                { key: 'role', header: 'Rôle', render: (u: any) => <Badge color="violet">{ROLE_LABELS[u.role] ?? u.role}</Badge> },
+                { key: 'role', header: 'Rôle', render: (u: any) => (
+                  <span className="flex items-center gap-1.5">
+                    <Badge color="violet">{ROLE_LABELS[u.role] ?? u.role}</Badge>
+                    {u.permissionOverrides?.length > 0 && <Badge color="blue">personnalisé</Badge>}
+                  </span>
+                ) },
                 { key: 'twoFactorEnabled', header: '2FA', render: (u: any) => (u.twoFactorEnabled ? <Badge color="green">Oui</Badge> : <Badge color="gray">Non</Badge>) },
                 { key: 'status', header: 'Statut', render: (u: any) => <StatusBadge status={u.status} /> },
               ]}
               rows={users.items}
+              onRowClick={(u: any) => setEditUser(u)}
               emptyLabel="Aucun utilisateur"
             />
           )}
@@ -297,6 +306,15 @@ export default function SettingsPage() {
           </form>
         )}
       </Modal>
+
+      {editUser && (
+        <UserEditor
+          user={editUser}
+          isSelf={editUser.id === me?.id}
+          onClose={() => setEditUser(null)}
+          onSaved={load}
+        />
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { crudRouter } from '../../utils/crud';
 import { nextMatricule } from '../../utils/numbering';
 import { hashPassword } from '../../utils/password';
 import { requirePermission, requireTenant } from '../../middleware/auth.middleware';
+import { assertStudentQuota } from '../../middleware/plan.middleware';
 
 const router = Router();
 
@@ -60,6 +61,8 @@ router.post(
       const data = studentSchema.parse(req.body);
       const school = await prisma.school.findUnique({ where: { id: req.schoolId } });
       if (!school) throw ApiError.notFound('Établissement introuvable');
+      // Limite d'élèves selon la formule d'abonnement.
+      await assertStudentQuota(req.schoolId!);
 
       const student = await prisma.$transaction(async (tx) => {
         const matricule = await nextMatricule(tx, school.id, school.code);

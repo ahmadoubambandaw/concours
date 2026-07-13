@@ -16,6 +16,7 @@ import { parseBody } from '../../utils/validate';
 import { nextReceiptNumber } from '../../utils/numbering';
 import { hasPermission } from '../../auth/permissions';
 import { authenticate, requireTenant } from '../../middleware/auth.middleware';
+import { requireFeature } from '../../middleware/plan.middleware';
 import { confirmInvoice, createCheckoutInvoice } from '../../services/paydunya';
 
 const router = Router();
@@ -32,7 +33,7 @@ const parentOwnsInvoice = async (userId: string, studentId: string): Promise<boo
 // ------------------------------------------------------------------
 // Démarrer un paiement
 // ------------------------------------------------------------------
-router.post('/checkout', authenticate, requireTenant, async (req, res, next) => {
+router.post('/checkout', authenticate, requireTenant, requireFeature('onlinePayments'), async (req, res, next) => {
   try {
     if (!env.paydunya.configured) {
       throw ApiError.badRequest(

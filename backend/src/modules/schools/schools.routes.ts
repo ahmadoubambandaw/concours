@@ -9,8 +9,23 @@ import { parseBody } from '../../utils/validate';
 import { hashPassword } from '../../utils/password';
 import { requirePermission, requireTenant } from '../../middleware/auth.middleware';
 import { getPagination, paginated } from '../../utils/pagination';
+import { RESOURCE_CATALOG, ROLE_PERMISSIONS, roleDefaults } from '../../auth/permissions';
 
 const router = Router();
+
+// Catalogue des permissions + droits par défaut d'un rôle (éditeur RBAC).
+router.get(
+  '/permissions/catalog',
+  requireTenant,
+  requirePermission('users', 'read'),
+  (req, res) => {
+    const role = String(req.query.role ?? 'SECRETARY');
+    const defaults = ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS]
+      ? roleDefaults(role as any)
+      : {};
+    res.json({ resources: RESOURCE_CATALOG, roleDefaults: defaults });
+  },
+);
 
 // --- Établissement courant ---
 
@@ -100,7 +115,7 @@ router.get(
           select: {
             id: true, email: true, phone: true, firstName: true, lastName: true,
             role: true, status: true, twoFactorEnabled: true, lastLoginAt: true,
-            avatarUrl: true, createdAt: true,
+            avatarUrl: true, createdAt: true, permissionOverrides: true,
           },
           orderBy: { createdAt: 'desc' },
           skip: pagination.skip,

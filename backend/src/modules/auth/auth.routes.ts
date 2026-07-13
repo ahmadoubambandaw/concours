@@ -79,6 +79,10 @@ router.post('/register-school', loginLimiter, async (req, res, next) => {
     const existing = await prisma.school.findUnique({ where: { code } });
     if (existing) throw ApiError.conflict('Ce code établissement est déjà utilisé');
 
+    // Essai de 30 jours : accès à TOUS les modules (formule Premium) sans
+    // limite. À l'expiration, l'établissement retombe automatiquement sur
+    // la formule Découverte (gratuite, limitée) tant qu'il n'a pas souscrit
+    // — c'est à ce moment que les limites s'appliquent.
     const trialEndsAt = new Date(Date.now() + 30 * 24 * 3600 * 1000);
     const result = await prisma.$transaction(async (tx) => {
       const school = await tx.school.create({
@@ -90,6 +94,9 @@ router.post('/register-school', loginLimiter, async (req, res, next) => {
           city: data.city,
           phone: data.phone,
           email: data.email,
+          status: 'TRIAL',
+          plan: 'PREMIUM',
+          planExpiresAt: trialEndsAt,
           trialEndsAt,
         },
       });

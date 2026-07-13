@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "School" ALTER COLUMN "plan" SET DEFAULT 'DECOUVERTE';
