@@ -67,6 +67,11 @@ const registerSchema = z.object({
   phone: z.string().optional(),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
+  // Fonction exercée dans l'établissement par la personne qui inscrit l'école
+  // (Directeur, Proviseur, Fondateur…). C'est le compte dirigeant : il reçoit
+  // le rôle SCHOOL_ADMIN (accès à tout). Le reste du personnel, créé ensuite,
+  // n'a accès qu'à ce que son rôle autorise.
+  jobTitle: z.string().min(2).max(60).optional(),
   email: z.string().email(),
   password: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
 });
@@ -107,6 +112,7 @@ router.post('/register-school', loginLimiter, async (req, res, next) => {
           password: await hashPassword(data.password),
           firstName: data.firstName,
           lastName: data.lastName,
+          jobTitle: data.jobTitle ?? 'Directeur',
           role: 'SCHOOL_ADMIN',
         },
       });

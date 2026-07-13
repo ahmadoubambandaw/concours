@@ -16,6 +16,7 @@ export default function RegisterPage() {
     city: '',
     firstName: '',
     lastName: '',
+    jobTitle: 'Directeur',
     email: '',
     password: '',
   });
@@ -81,6 +82,20 @@ export default function RegisterPage() {
                 <input required className="input" value={form.lastName} onChange={set('lastName')} />
               </Field>
             </div>
+            <Field label="Votre fonction dans l'établissement" required>
+              <select className="input" value={form.jobTitle} onChange={set('jobTitle')}>
+                <option value="Directeur">Directeur</option>
+                <option value="Directrice">Directrice</option>
+                <option value="Directeur Général">Directeur Général</option>
+                <option value="Proviseur">Proviseur (lycée)</option>
+                <option value="Principal">Principal (collège)</option>
+                <option value="Fondateur">Fondateur / Promoteur</option>
+                <option value="Administrateur">Administrateur</option>
+              </select>
+              <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                En tant que dirigeant, votre compte a accès à tout. Le personnel que vous ajouterez ensuite n&apos;aura accès qu&apos;à ce que sa fonction autorise.
+              </p>
+            </Field>
             <Field label="Email" required>
               <input type="email" required className="input" value={form.email} onChange={set('email')} placeholder="vous@ecole.sn" />
             </Field>

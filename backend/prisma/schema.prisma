@@ -194,6 +194,9 @@ model User {
   lastName          String
   avatarUrl         String?
   role              Role
+  // Fonction déclarée dans l'établissement (Directeur, Proviseur, Comptable…),
+  // à titre d'affichage. Le rôle technique reste porté par `role`.
+  jobTitle          String?
   // Permissions fines additionnelles/retirées par rapport au rôle,
   // format ["+resource:action", "-resource:action"]
   permissionOverrides Json     @default("[]")
