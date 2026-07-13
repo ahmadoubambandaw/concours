@@ -50,6 +50,19 @@ export default function SubscriptionPage() {
 
       {error && <p className="mb-3 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">{error}</p>}
 
+      {/* Bandeau d'essai */}
+      {current.isTrial && (
+        <p className="mb-4 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-800 dark:bg-brand-950 dark:text-brand-200">
+          🎉 <b>Essai gratuit en cours</b> — vous avez accès à <b>tous les modules</b> (formule Premium) jusqu&apos;au {formatDate(current.planExpiresAt)}. Choisissez une formule avant cette date pour continuer sans interruption.
+        </p>
+      )}
+      {current.trialExpired && (
+        <p className="mb-4 flex items-start gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+          <span>Votre essai est terminé. Vous êtes maintenant sur la formule <b>Découverte</b> (gratuite, limitée). Choisissez une formule ci-dessous pour débloquer tous les modules.</span>
+        </p>
+      )}
+
       {/* Formule actuelle */}
       <div className="mb-6 grid gap-4 lg:grid-cols-3">
         <Card className="p-5">

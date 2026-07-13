@@ -106,11 +106,18 @@ router.get('/current', requireTenant, async (req, res, next) => {
       planDetails: PLANS[plan],
       subscribedPlan: school.plan,
       planExpiresAt: school.planExpiresAt,
-      // Est-on en période d'essai (formule payante limitée dans le temps
-      // mais aucune souscription active enregistrée) ?
+      // Est-on en période d'essai en cours (formule Premium offerte, non
+      // encore expirée, sans souscription payante active) ?
       isTrial:
         school.plan !== 'DECOUVERTE' &&
         !!school.planExpiresAt &&
+        school.planExpiresAt.getTime() > Date.now() &&
+        subscriptions.every((s) => s.status !== 'ACTIVE'),
+      // L'essai a-t-il expiré sans souscription (l'établissement est
+      // redescendu en Découverte et doit choisir une formule) ?
+      trialExpired:
+        !!school.planExpiresAt &&
+        school.planExpiresAt.getTime() <= Date.now() &&
         subscriptions.every((s) => s.status !== 'ACTIVE'),
       usage: { students, maxStudents: max, studentsRemaining: max === null ? null : Math.max(0, max - students) },
       currency: school.currency,
