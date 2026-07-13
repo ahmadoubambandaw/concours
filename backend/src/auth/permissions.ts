@@ -130,3 +130,75 @@ export const hasPermission = (
   if (overrides.some((o) => o.startsWith('+') && matches(o.slice(1), wanted))) return true;
   return (ROLE_PERMISSIONS[role] ?? []).some((granted) => matches(granted, wanted));
 };
+
+// ------------------------------------------------------------
+// Catalogue des permissions — pour l'éditeur d'administration.
+// Chaque ressource liste les actions qui ont un sens pour elle.
+// ------------------------------------------------------------
+
+export interface ResourceDef {
+  key: string;
+  label: string;
+  group: string;
+  actions: Action[];
+}
+
+const CRUD: Action[] = ['read', 'create', 'update', 'delete'];
+
+export const RESOURCE_CATALOG: ResourceDef[] = [
+  { key: 'dashboard', label: 'Tableau de bord', group: 'Pilotage', actions: ['read'] },
+  { key: 'ai', label: 'Assistant IA', group: 'Pilotage', actions: ['read'] },
+  { key: 'reports', label: 'Rapports & exports', group: 'Pilotage', actions: ['read'] },
+
+  { key: 'students', label: 'Élèves', group: 'Scolarité', actions: CRUD },
+  { key: 'guardians', label: 'Parents / tuteurs', group: 'Scolarité', actions: CRUD },
+  { key: 'teachers', label: 'Enseignants', group: 'Scolarité', actions: CRUD },
+  { key: 'classes', label: 'Classes & salles', group: 'Scolarité', actions: CRUD },
+  { key: 'subjects', label: 'Matières', group: 'Scolarité', actions: CRUD },
+  { key: 'levels', label: 'Niveaux', group: 'Scolarité', actions: CRUD },
+  { key: 'academicYears', label: 'Années scolaires', group: 'Scolarité', actions: [...CRUD, 'validate'] },
+  { key: 'preregistrations', label: 'Pré-inscriptions', group: 'Scolarité', actions: CRUD },
+  { key: 'enrollments', label: 'Inscriptions', group: 'Scolarité', actions: CRUD },
+
+  { key: 'attendance', label: 'Présences', group: 'Vie scolaire', actions: ['read', 'create', 'update'] },
+  { key: 'grades', label: 'Notes', group: 'Scolarité', actions: CRUD },
+  { key: 'assessments', label: 'Évaluations', group: 'Scolarité', actions: CRUD },
+  { key: 'reportCards', label: 'Bulletins', group: 'Scolarité', actions: ['read', 'create', 'validate'] },
+  { key: 'deliberations', label: 'Délibérations', group: 'Scolarité', actions: ['read', 'create'] },
+  { key: 'timetable', label: 'Emplois du temps', group: 'Scolarité', actions: CRUD },
+  { key: 'exams', label: 'Examens', group: 'Scolarité', actions: CRUD },
+  { key: 'homework', label: 'Cahier de texte', group: 'Scolarité', actions: CRUD },
+  { key: 'events', label: 'Calendrier', group: 'Scolarité', actions: CRUD },
+
+  { key: 'fees', label: 'Grille de frais', group: 'Finances', actions: CRUD },
+  { key: 'invoices', label: 'Factures', group: 'Finances', actions: ['read', 'create', 'validate'] },
+  { key: 'payments', label: 'Paiements', group: 'Finances', actions: ['read', 'create', 'validate'] },
+  { key: 'expenses', label: 'Dépenses', group: 'Finances', actions: CRUD },
+  { key: 'incomes', label: 'Recettes', group: 'Finances', actions: CRUD },
+  { key: 'accounting', label: 'Comptabilité', group: 'Finances', actions: ['read'] },
+  { key: 'hr', label: 'RH (personnel, congés)', group: 'Finances', actions: [...CRUD, 'validate'] },
+  { key: 'payroll', label: 'Paie', group: 'Finances', actions: CRUD },
+
+  { key: 'library', label: 'Bibliothèque', group: 'Vie scolaire', actions: CRUD },
+  { key: 'canteen', label: 'Cantine', group: 'Vie scolaire', actions: ['read', 'create'] },
+  { key: 'transport', label: 'Transport', group: 'Vie scolaire', actions: CRUD },
+  { key: 'discipline', label: 'Discipline', group: 'Vie scolaire', actions: CRUD },
+  { key: 'infirmary', label: 'Infirmerie', group: 'Vie scolaire', actions: CRUD },
+
+  { key: 'communication', label: 'Communication', group: 'Organisation', actions: ['read', 'create'] },
+  { key: 'documents', label: 'Documents', group: 'Organisation', actions: CRUD },
+  { key: 'users', label: 'Utilisateurs', group: 'Organisation', actions: ['read', 'create', 'update'] },
+  { key: 'settings', label: 'Paramètres', group: 'Organisation', actions: ['update'] },
+  { key: 'audit', label: "Journal d'audit", group: 'Organisation', actions: ['read'] },
+];
+
+/** Matrice { "resource:action": booléen } accordée par un rôle (sans overrides). */
+export const roleDefaults = (role: Role): Record<string, boolean> => {
+  const out: Record<string, boolean> = {};
+  for (const res of RESOURCE_CATALOG) {
+    for (const action of res.actions) {
+      out[`${res.key}:${action}`] = hasPermission(role, res.key, action, []);
+    }
+  }
+  return out;
+};
