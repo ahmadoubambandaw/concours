@@ -69,6 +69,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: '/communication', label: 'Communication', icon: MessageSquare, roles: STAFF },
       { href: '/reports', label: 'Rapports & exports', icon: BarChart3, roles: ADMINS.concat('ACCOUNTANT') },
+      { href: '/subscription', label: 'Abonnement', icon: CreditCard, roles: ADMINS },
       { href: '/settings', label: 'Paramètres', icon: Settings, roles: ADMINS },
     ],
   },

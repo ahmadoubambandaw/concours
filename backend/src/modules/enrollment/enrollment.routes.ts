@@ -9,6 +9,7 @@ import { ApiError } from '../../utils/errors';
 import { crudRouter } from '../../utils/crud';
 import { nextInvoiceNumber, nextMatricule } from '../../utils/numbering';
 import { requirePermission, requireTenant } from '../../middleware/auth.middleware';
+import { assertStudentQuota } from '../../middleware/plan.middleware';
 
 const router = Router();
 
@@ -64,6 +65,8 @@ router.post(
       });
       if (!schoolClass) throw ApiError.notFound('Classe introuvable');
       const school = await prisma.school.findUnique({ where: { id: req.schoolId } });
+      // La conversion crée un élève : soumise à la limite de la formule.
+      await assertStudentQuota(req.schoolId!);
 
       const result = await prisma.$transaction(async (tx) => {
         const matricule = await nextMatricule(tx, school!.id, school!.code);
