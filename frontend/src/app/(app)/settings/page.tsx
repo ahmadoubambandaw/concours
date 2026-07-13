@@ -61,7 +61,8 @@ export default function SettingsPage() {
       } else if (modal === 'fee') {
         await api('/finance/fees', { method: 'POST', body: JSON.stringify({ ...form, amount: parseInt(form.amount, 10) }) });
       } else if (modal === 'user') {
-        await api('/schools/users', { method: 'POST', body: JSON.stringify(form) });
+        const payload = { ...form, jobTitle: form.jobTitle?.trim() || undefined };
+        await api('/schools/users', { method: 'POST', body: JSON.stringify(payload) });
       }
       setModal(null); setForm({}); load();
     } catch (err: any) {
@@ -215,6 +216,7 @@ export default function SettingsPage() {
                 { key: 'name', header: 'Utilisateur', render: (u: any) => (
                   <div>
                     <p className="font-medium">{u.firstName} {u.lastName}</p>
+                    {u.jobTitle && <p className="text-xs font-medium text-brand-600">{u.jobTitle}</p>}
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{u.email}</p>
                   </div>
                 ) },
@@ -285,6 +287,9 @@ export default function SettingsPage() {
               </select>
             </Field>
           </div>
+          <Field label="Intitulé du poste (facultatif)">
+            <input className="input" value={form.jobTitle ?? ''} onChange={(e) => setForm({ ...form, jobTitle: e.target.value })} placeholder="Ex : Professeur de Mathématiques, Directrice des études…" />
+          </Field>
           {/* La fonction détermine automatiquement les permissions. */}
           <RolePermissionsPreview role={form.role} />
           {error && <p className="text-sm text-red-500">{error}</p>}

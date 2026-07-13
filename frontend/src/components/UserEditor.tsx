@@ -33,6 +33,7 @@ export const UserEditor = ({
 }) => {
   const [role, setRole] = useState<string>(user.role);
   const [status, setStatus] = useState<string>(user.status ?? 'ACTIVE');
+  const [jobTitle, setJobTitle] = useState<string>(user.jobTitle ?? '');
   const [overrides, setOverrides] = useState<string[]>(user.permissionOverrides ?? []);
   const [catalog, setCatalog] = useState<{ resources: ResourceDef[]; roleDefaults: Record<string, boolean> } | null>(null);
   const [showPerms, setShowPerms] = useState(false);
@@ -67,6 +68,7 @@ export const UserEditor = ({
         method: 'PATCH',
         body: JSON.stringify({
           ...(isSelf ? {} : { role, status }),
+          jobTitle: jobTitle.trim() || null,
           permissionOverrides: overrides,
         }),
       });
@@ -103,6 +105,15 @@ export const UserEditor = ({
             </select>
           </Field>
         </div>
+
+        <Field label="Intitulé du poste (facultatif)">
+          <input
+            className="input"
+            value={jobTitle}
+            onChange={(e) => setJobTitle(e.target.value)}
+            placeholder="Ex : Directeur, Professeur de Mathématiques…"
+          />
+        </Field>
 
         {/* Permissions avancées */}
         <div className="rounded-lg border" style={{ borderColor: 'var(--border)' }}>

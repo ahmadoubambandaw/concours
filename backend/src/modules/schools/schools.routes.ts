@@ -89,6 +89,7 @@ const userCreateSchema = z.object({
     'SCHOOL_ADMIN', 'DIRECTOR', 'PRINCIPAL', 'ACCOUNTANT', 'SECRETARY',
     'TEACHER', 'PARENT', 'STUDENT', 'LIBRARIAN', 'SUPERVISOR', 'NURSE', 'DRIVER',
   ]),
+  jobTitle: z.string().min(2).max(60).nullable().optional(),
   permissionOverrides: z.array(z.string()).optional(),
 });
 
@@ -114,7 +115,7 @@ router.get(
           where,
           select: {
             id: true, email: true, phone: true, firstName: true, lastName: true,
-            role: true, status: true, twoFactorEnabled: true, lastLoginAt: true,
+            role: true, jobTitle: true, status: true, twoFactorEnabled: true, lastLoginAt: true,
             avatarUrl: true, createdAt: true, permissionOverrides: true,
           },
           orderBy: { createdAt: 'desc' },
@@ -146,6 +147,7 @@ router.post(
           lastName: data.lastName,
           phone: data.phone,
           role: data.role,
+          jobTitle: data.jobTitle ?? null,
           permissionOverrides: data.permissionOverrides ?? [],
         },
         select: { id: true, email: true, firstName: true, lastName: true, role: true },
